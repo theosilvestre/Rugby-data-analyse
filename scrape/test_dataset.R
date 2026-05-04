@@ -1,4 +1,4 @@
-load("top14.rda")
+load("prod2.rda")
 
 
 teams <- unique(data$home)
@@ -21,17 +21,17 @@ checkDataMatch <- data.frame(rep(NA,length(teams)*(length(teams)-1)),rep(NA,leng
 for(i in 1:length(teams)){
   for(j in 1:length(teams)){
     if(j != i){
-      for(t in 1:length(type)) checkDataMatch[j+(i-1)*14,1] <- teams[i]
-      for(t in 1:length(type)) checkDataMatch[j+(i-1)*14,2] <- teams[j]
-      for(t in 1:length(type)) checkDataMatch[j+(i-1)*14,3] <- checkDataMatch[j+(i-1)*14,3] + weights[t] * nrow(data[data$home==teams[i] & data$away==teams[j] & data$type==type[t] & data$where=="home",])
-      for(t in 1:length(type)) checkDataMatch[j+(i-1)*14,4] <- checkDataMatch[j+(i-1)*14,4] + weights[t] * nrow(data[data$home==teams[i] & data$away==teams[j] & data$type==type[t] & data$where=="away",])
+      for(t in 1:length(type)) checkDataMatch[j+(i-1)*length(teams),1] <- teams[i]
+      for(t in 1:length(type)) checkDataMatch[j+(i-1)*length(teams),2] <- teams[j]
+      for(t in 1:length(type)) checkDataMatch[j+(i-1)*length(teams),3] <- checkDataMatch[j+(i-1)*length(teams),3] + weights[t] * nrow(data[data$home==teams[i] & data$away==teams[j] & data$type==type[t] & data$where=="home",])
+      for(t in 1:length(type)) checkDataMatch[j+(i-1)*length(teams),4] <- checkDataMatch[j+(i-1)*length(teams),4] + weights[t] * nrow(data[data$home==teams[i] & data$away==teams[j] & data$type==type[t] & data$where=="away",])
     }
   }
 }
 colnames(checkDataMatch) <- c("team1","team2","home","away")
 checkDataMatch <- checkDataMatch[!is.na(checkDataMatch$team1),]
 
-cards <- data.frame(rep(NA,14),rep(NA,14),rep(NA,14))
+cards <- data.frame(rep(NA,length(teams)),rep(NA,length(teams)),rep(NA,length(teams)))
 colnames(cards) <- c("yellow","red","orange")
 rownames(cards) <- teams
 for(i in 1:length(teams)) cards[i,1] <- nrow(data[data$type=="yellow" & ((data$home==teams[i] & data$where=="home") | (data$away==teams[i] & data$where=="away")),])
