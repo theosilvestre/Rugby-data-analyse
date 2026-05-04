@@ -2,9 +2,12 @@ library(xml2)
 
 #find in an html text the line (in lines) and the row (in the corresponding string) in which appear the last character of pat
 findlinerow <- function(lines,pat){
-  res <- matrix(grep(pat,lines),ncol=1)
-  res <- cbind(res, sapply(1:nrow(res), function(i) gregexpr(pat,lines[res[i,1]])[[1]][1] + nchar(pat)))
-  return(res)
+  if(length(grep("pat",lines))) return(NULL)
+  else{
+    res <- matrix(grep(pat,lines),ncol=1)
+    res <- cbind(res, sapply(1:nrow(res), function(i) gregexpr(pat,lines[res[i,1]])[[1]][1] + nchar(pat)))
+    return(res)
+  }
 }
 #use findlinerow and then return the string begining at the end of the occurrence of pat + 'plus' and ending 'to' rows later 
 findlinerowextract <- function(lines,pat,to,plus=0){
@@ -29,4 +32,41 @@ findtypematch <- function(weblines,type,label,indlocal,thome,taway,scorehome,sco
   return(data)
 }
 
+navigate_safe <- function(session, url, class=NULL, timeout = 5000, retries = 2) { 
+  for (i in seq_len(retries)) {
+    try({
+      session$Page$navigate(url, timeout_ = timeout)
+      if(is.null(class)){ session$Page$loadEventFired(wait_ = TRUE)
+      } else {
+        check <- NULL
+        while(is.null(check)){
+          check <- session$Runtime$evaluate(paste0("
+          new Promise(resolve => {
+            if (document.querySelector('.",class,"')) {
+              resolve(true);
+              return;
+            }
 
+            const observer = new MutationObserver(() => {
+              if (document.querySelector('.",class,"')) {
+                observer.disconnect();
+                resolve(true);
+              }
+            });
+
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        });
+      "), awaitPromise = TRUE,wait_ = TRUE)$result$value
+        }
+      }
+      return(TRUE)
+    }, silent = TRUE)
+    
+    Sys.sleep(1)
+  }
+  # stop("Navigation failed: ", url)
+  return(FALSE)
+}
