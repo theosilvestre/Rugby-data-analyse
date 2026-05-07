@@ -12,37 +12,36 @@ findMatchLNR <- function(union,verbose=TRUE){
   url <- paste0("https://",union,".lnr.fr/calendrier-et-resultats/")
   b <- ChromoteSession$new()
   navigate_safe(b,url,"input--select",retries = 2)
-  Sys.sleep(0.5)
   tmp <- jsonlite::fromJSON(b$Runtime$evaluate("JSON.stringify(Array.from(document.querySelectorAll('.input--select')).map(el => el.innerText))")$result$value)
   season <- strsplit(tolower(tmp[1]),"\n")[[1]][-1]
   res <- list()
   for(s in season){
     if(verbose) print(s)
     js <- sprintf("
-  new Promise(resolve => {
-    const select = document.querySelector('#Saison');
-    if(!select){ resolve('no select'); return; }
-    const getText = () => select.options[select.selectedIndex]?.text.trim();
-    const targetText = '%s';
-    const opts = Array.from(select.options);
-    const idx = opts.findIndex(o => o.text.trim() === targetText);
-    if(idx >= 0){
-      select.selectedIndex = idx;
-      select.dispatchEvent(new Event('input',{bubbles:true}));
-      select.dispatchEvent(new Event('change',{bubbles:true}));
-    }
+      new Promise(resolve => {
+        const select = document.querySelector('#Saison');
+        if(!select){ resolve('no select'); return; }
+        const getText = () => select.options[select.selectedIndex]?.text.trim();
+        const targetText = '%s';
+        const opts = Array.from(select.options);
+        const idx = opts.findIndex(o => o.text.trim() === targetText);
+        if(idx >= 0){
+          select.selectedIndex = idx;
+          select.dispatchEvent(new Event('input',{bubbles:true}));
+          select.dispatchEvent(new Event('change',{bubbles:true}));
+        }
 
-    const check = () => {
-      if(getText() === targetText){
-        resolve('updated');
-      } else {
-        setTimeout(check, 100);
-      }
-    };
+        const check = () => {
+          if(getText() === targetText){
+            resolve('updated');
+          } else {
+            setTimeout(check, 100);
+          }
+        };
 
-    check();
-  })
-", s)
+        check();
+      })
+    ", s)
     js <- gsub("[\n\r]", " ", js)
     b$Runtime$evaluate(expression = js, awaitPromise = TRUE)
     res[[s]] <- strsplit(tolower(jsonlite::fromJSON(b$Runtime$evaluate("JSON.stringify(Array.from(document.querySelectorAll('.input--select')).map(el => el.innerText))")$result$value)[2]),"\n")[[1]][-1]
