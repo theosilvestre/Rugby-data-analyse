@@ -2,7 +2,7 @@ library(xml2)
 
 #find in an html text the line (in lines) and the row (in the corresponding string) in which appear the last character of pat
 findlinerow <- function(lines,pat){
-  if(length(grep("pat",lines))) return(NULL)
+  if(length(grep("pat",lines))==0) return(NULL)
   else{
     res <- matrix(grep(pat,lines),ncol=1)
     res <- cbind(res, sapply(1:nrow(res), function(i) gregexpr(pat,lines[res[i,1]])[[1]][1] + nchar(pat)))
