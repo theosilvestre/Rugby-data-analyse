@@ -24,9 +24,9 @@ scraperama <- function(union,addMat=NULL,whichMatches=NULL){
   if(!is.null(addMat)) if(any(colnames(addMat)!=c("minute","type","home","away","where","score","round","player","date"))) stop("Cannot add to the given matrix. Wrong colnames.")
   
   id <- findMatchRama(union)
-  if(is.null(whichMatches) || !is.integer(whichMatches) || any(whichMatches < 1) || any(whichMatches > length(id))){
+  if(!is.null(whichMatches) && (!is.integer(whichMatches) || any(whichMatches < 1) || any(whichMatches > length(id)))){
     stop("Wrong range for whichMatches. Check findMatchRama().")
-  } else {
+  } else if(!is.null(whichMatches)) {
     id <- id[whichMatches]
   }
   data <- data.frame("minute"=NA,"type"=NA,"home"=NA,"away"=NA,"where"=NA,"score"=NA,"round"=NA,"player"=NA,"date"=NA)
