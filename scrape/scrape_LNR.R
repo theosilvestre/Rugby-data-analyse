@@ -1,5 +1,3 @@
-library(chromote)
-
 source("scrape_annex.R")
 
 ##-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-##
@@ -73,17 +71,17 @@ scrapeLNR <- function(union,addMat=NULL,whichMatches=NULL,fetchdata=TRUE,fetchst
     }
   }
   ### Scraping data and stats ### 
-  data <- data.frame("minute"=NA,"type"=NA,"home"=NA,"away"=NA,"where"=NA,"score"=NA,"round"=NA,"player"=NA,"date"=NA)
+  data <- data.frame("minute"=NA,"type"=NA,"home"=NA,"away"=NA,"where"=NA,"round"=NA,"player"=NA,"date"=NA)
   stats <- data.frame("type"=NA,"home"=NA,"away"=NA,"statsHome"=NA,"statsAway"=NA,"round"=NA,"date"=NA)
   for(s in listSeason){
     for(j in listRound[[s]]){
       b <- ChromoteSession$new()
-      flag <- navigate_safe(b,paste0("https://",union,".lnr.fr/calendrier-et-resultats/",s,"/",j,collapse=""),"match-line__score",retries = 2,timeout = 1000)
+      flag <- navigate_safe(b,paste0("https://",union,".lnr.fr/calendrier-et-resultats/",s,"/",j,collapse=""),"match-line__score",retries = 2,timeout = 1000)  #May fail, flag may next the loop
       if(!flag) next
       id <- jsonlite::fromJSON(b$Runtime$evaluate("JSON.stringify(Array.from(document.querySelectorAll('.match-line__score')).map(el => el.href))")$result$value)
       for(idm in id){
         ### Finding home team, visitor team, round, date ###
-        flag <- navigate_safe(b,idm,"title",retries = 2)
+        flag <- navigate_safe(b,idm,"title",retries = 2,timeout = 1000)
         if(!flag) next
         tmp <- jsonlite::fromJSON(b$Runtime$evaluate("JSON.stringify(Array.from(document.querySelectorAll('.title.title--large.title--textured.title--centered')).map(el => el.innerText))")$result$value)
         if(length(tmp) > 0) score <- list("home"=strsplit(tmp," - ")[[1]][1],"away"=strsplit(tmp," - ")[[1]][2]) 
@@ -110,10 +108,10 @@ scrapeLNR <- function(union,addMat=NULL,whichMatches=NULL,fetchdata=TRUE,fetchst
             if(length(action)>0){
               for(i in 1:length(action)){
                 tmp <- strsplit(action[i],"\n")[[1]]
-                if(length(tmp)==3) data <- rbind(data,c(actime[i],tmp[2],thome,taway,where,score[[where]],round,tolower(tmp[3]),date))
+                if(length(tmp)==3) data <- rbind(data,c(actime[i],tmp[2],thome,taway,where,round,tolower(tmp[3]),date))
                 else if(length(tmp)==4){
                   tmpbis <- strsplit(tmp[4]," ")[[1]]
-                  data <- rbind(data,c(actime[i],"conversion",thome,taway,where,score[[where]],round,tolower(paste(tmpbis[3:length(tmp)],collapse=" ")),date))
+                  data <- rbind(data,c(actime[i],"conversion",thome,taway,where,round,tolower(paste(tmpbis[3:length(tmp)],collapse=" ")),date))
                 }
               }
             }
@@ -123,17 +121,15 @@ scrapeLNR <- function(union,addMat=NULL,whichMatches=NULL,fetchdata=TRUE,fetchst
         if(fetchstats){
           flag <- navigate_safe(b,paste0(idm,"/statistiques-du-match"),"stats-bar",retries = 2,timeout = 1000)
           if(!flag) next
-          for(where in c("home","away")){
-            action <- jsonlite::fromJSON(b$Runtime$evaluate("JSON.stringify(Array.from(document.querySelectorAll('.stats-bar')).map(el => el.innerText))")$result$value)
-            if(length(action)>0){
-              for(i in 1:length(action)){
-                tmp <- strsplit(action[i],"\n")[[1]]
-                stats <- rbind(stats,c(tmp[1],thome,taway,tmp[2],tmp[3],round,date))
-              } 
+          action <- jsonlite::fromJSON(b$Runtime$evaluate("JSON.stringify(Array.from(document.querySelectorAll('.stats-bar')).map(el => el.innerText))")$result$value)
+          stats <- rbind(stats,c("Score",thome,taway,score$home,score$away,round,date))
+          if(length(action)>0){
+            for(i in 1:length(action)){
+              tmp <- strsplit(action[i],"\n")[[1]]
+              stats <- rbind(stats,c(tmp[1],thome,taway,tmp[2],tmp[3],round,date))
             }
           }
         }
-        
       }
       b$close()
     }
